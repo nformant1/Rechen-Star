@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="sonne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFF6DD">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Plus-Profi">
+<title>Plus-Profi – Rechnen bis 100</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>➕</text></svg>">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --einer:#D6286E; --zehner:#2457D6; --ok:#1E9E50; --ok-dark:#137338; --bad:#E0434A; --bad-dark:#A52A30;
+  --font: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Nunito", "Segoe UI", system-ui, sans-serif;
+}
+html[data-theme="sonne"]{--bg:#FFF6DD;--grid:#F5E3B5;--card:#FFFFFF;--soft:#FFF1CF;--edge:#F0D89A;--primary:#E46C00;--primary-dark:#A84F00;--text:#3A2A18;--muted:#86704F}
+html[data-theme="ozean"]{--bg:#E8F5FF;--grid:#CFE6FA;--card:#FFFFFF;--soft:#DDEFFF;--edge:#B7D8F5;--primary:#1A73D1;--primary-dark:#0F4F96;--text:#10304D;--muted:#566F88}
+html[data-theme="wald"]{--bg:#ECF7E4;--grid:#D3EBC4;--card:#FFFFFF;--soft:#E0F2D6;--edge:#BFDDAA;--primary:#2E8B3A;--primary-dark:#1D5F26;--text:#1C3618;--muted:#58744F}
+
+html{background:var(--bg);-webkit-text-size-adjust:100%;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{
+  min-height:100vh;color:var(--text);font-family:var(--font);font-size:20px;line-height:1.35;
+  background-color:var(--bg);
+  /* Karopapier wie im Rechenheft */
+  background-image:linear-gradient(var(--grid) 1.5px,transparent 1.5px),linear-gradient(90deg,var(--grid) 1.5px,transparent 1.5px);
+  background-size:28px 28px;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:4px solid var(--zehner);outline-offset:3px}
+#app{max-width:760px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:16px}
+
+h1{font-size:clamp(1.8rem,6.5vw,2.6rem);line-height:1.15;text-align:center;font-weight:800}
+h2{font-size:1.3rem;margin-bottom:12px;font-weight:700}
+.center{text-align:center}
+.hint{color:var(--muted);font-size:1.05rem}
+.big{font-size:1.35rem;font-weight:700}
+
+.card{background:var(--card);border-radius:28px;padding:20px;box-shadow:0 5px 0 var(--edge)}
+
+/* Große Knöpfe wie Bauklötze */
+.btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:78px;padding:14px 20px;border-radius:24px;
+  font-size:1.45rem;font-weight:700;background:var(--primary);color:#fff;box-shadow:0 7px 0 var(--primary-dark);transition:transform .07s,box-shadow .07s}
+.btn:active{transform:translateY(6px);box-shadow:0 1px 0 var(--primary-dark)}
+.btn .ic{font-size:2rem;line-height:1}
+.btn small{font-weight:500;opacity:.9;font-size:1rem}
+.btn.light{background:var(--card);color:var(--text);box-shadow:0 7px 0 var(--edge)}
+.btn.light:active{box-shadow:0 1px 0 var(--edge)}
+.btn.ok{background:var(--ok);box-shadow:0 7px 0 var(--ok-dark)}
+.btn.ok:active{box-shadow:0 1px 0 var(--ok-dark)}
+.btn.bad{background:var(--bad);box-shadow:0 7px 0 var(--bad-dark)}
+.btn.bad:active{box-shadow:0 1px 0 var(--bad-dark)}
+.btn.small{min-height:62px;font-size:1.15rem}
+.btn.small .ic{font-size:1.5rem}
+.row{display:flex;gap:14px}
+.row>*{flex:1}
+
+.top{display:flex;align-items:center;gap:12px}
+.icon-btn{width:62px;height:62px;border-radius:20px;background:var(--card);font-size:1.9rem;box-shadow:0 5px 0 var(--edge);flex:none;display:grid;place-items:center}
+.icon-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--edge)}
+.who{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.2rem;flex:1;min-width:0}
+.who .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.avatar{border-radius:50%;overflow:hidden;flex:none;display:block;background:#fff}
+.avatar svg{display:block;width:100%;height:100%}
+.avatar.sm{width:52px;height:52px;box-shadow:0 3px 0 var(--edge)}
+.avatar.md{width:100%;aspect-ratio:1/1}
+.avatar.lg{width:132px;height:132px;margin:0 auto 10px;box-shadow:0 6px 0 var(--edge)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);padding:8px 14px;border-radius:999px;font-weight:700;font-size:1.05rem;box-shadow:0 3px 0 var(--edge)}
+.statusbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+
+/* Aufgabe */
+.task{font-size:clamp(2.6rem,11.5vw,5.6rem);font-weight:800;text-align:center;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.e{color:var(--einer)} .z{color:var(--zehner)}
+.sum{color:var(--ok)}
+.legend{display:flex;justify-content:center;gap:18px;font-size:1rem;font-weight:700;margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:16px;border-radius:5px;display:inline-block}
+
+.steps{display:flex;flex-direction:column;gap:10px}
+.step{display:flex;gap:12px;align-items:center;background:var(--soft);border-radius:18px;padding:12px 14px}
+.step .num{width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.2rem;flex:none}
+.step .lbl{display:block;color:var(--muted);font-size:.95rem;font-weight:700}
+.step b{display:block;font-size:1.55rem;font-variant-numeric:tabular-nums}
+.step .sub{display:block;font-size:1rem;color:var(--text);margin-top:2px}
+
+/* Profil */
+.name-row{display:flex;gap:12px}
+.name-input{flex:1;min-width:0;font:inherit;font-size:1.45rem;font-weight:700;padding:14px 18px;border-radius:20px;border:3px solid var(--edge);background:var(--soft);color:var(--text)}
+.name-input::placeholder{color:var(--muted);font-weight:500}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.pick{border-radius:22px;padding:6px 4px 8px;border:4px solid transparent;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--soft)}
+.pick .lbl{font-size:.82rem;font-weight:700}
+.pick.sel{border-color:var(--primary);background:var(--card)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.theme-btn{padding:14px 6px;border-radius:22px;background:var(--soft);border:4px solid transparent;font-size:1.1rem;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:8px}
+.theme-btn .sw{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:1.6rem;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
+.theme-btn.sel{border-color:var(--primary);background:var(--card)}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;justify-content:center;gap:22px}
+.step-btn{width:76px;height:76px;border-radius:50%;background:var(--primary);color:#fff;font-size:2.6rem;font-weight:800;box-shadow:0 6px 0 var(--primary-dark);display:grid;place-items:center;line-height:1}
+.step-btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--primary-dark)}
+.step-val{font-size:3rem;font-weight:800;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums}
+
+/* Prüfung */
+.bar{height:24px;border-radius:999px;background:var(--card);overflow:hidden;box-shadow:inset 0 3px 0 var(--edge)}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:999px;transition:width .1s linear}
+.bar.low i{background:var(--bad)}
+.secs{min-width:70px;justify-content:center;font-size:1.3rem}
+.secs.low{background:var(--bad);color:#fff}
+.answer-box{display:inline-block;min-width:1.9em;padding:0 .12em;border-bottom:.09em solid var(--primary);color:var(--primary);text-align:center}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.key{min-height:74px;font-size:2.1rem;font-weight:800;border-radius:22px;background:var(--card);box-shadow:0 6px 0 var(--edge)}
+.key:active{transform:translateY(5px);box-shadow:0 1px 0 var(--edge)}
+.key.go{background:var(--ok);color:#fff;box-shadow:0 6px 0 var(--ok-dark)}
+.key.go:active{box-shadow:0 1px 0 var(--ok-dark)}
+
+/* Ergebnisse */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.stats b{display:block;font-size:2rem;font-variant-numeric:tabular-nums}
+.stats small{color:var(--muted);font-size:.9rem;font-weight:700}
+.okc{color:var(--ok)} .badc{color:var(--bad)}
+.list{display:flex;flex-direction:column;gap:8px}
+.res{background:var(--soft);border-radius:16px;font-size:1.25rem}
+.res>.line,.res>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;list-style:none}
+.res>summary{cursor:pointer}
+.res>summary::-webkit-details-marker{display:none}
+.res .grow{flex:1;font-weight:700;font-variant-numeric:tabular-nums}
+.res .meta{font-size:1rem;color:var(--muted);font-weight:700;white-space:nowrap}
+.res .open{font-size:1rem;font-weight:700;color:var(--primary);white-space:nowrap}
+.res[open] .open{opacity:.5}
+.res .steps{padding:0 10px 12px}
+.res.wrong{background:#FDE4E4}
+.res.wrong .step{background:#fff}
+.big-emoji{font-size:4rem;line-height:1.1}
+.stars{font-size:3.2rem;letter-spacing:.1em}
+.stars .dim{filter:grayscale(1);opacity:.3}
+.score{font-size:1.6rem;font-weight:800;margin-top:6px}
+.quote{font-size:1.3rem;font-weight:700;background:var(--primary);color:#fff;box-shadow:0 5px 0 var(--primary-dark)}
+.quote .q-ic{font-size:2.2rem;display:block;margin-bottom:4px}
+
+.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+.confetti{position:fixed;top:-50px;font-size:2rem;pointer-events:none;z-index:50;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(600deg)}}
+@media (min-width:700px){body{font-size:22px}}
+@media (max-width:380px){.grid5{gap:6px}.pick .lbl{font-size:.7rem}.btn{font-size:1.25rem}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+
+<script>
+"use strict";
+/* ============ Daten ============ */
+const KEY = 'plusprofi-v1';
+
+const NAMES = ["Alter Profi","Rechenkönig","Zahlenzauberer","Mathe-Held","Plus-Pirat","Rechen-Rakete","Zahlenfuchs","Blitzrechner","Kopfrechen-Ass","Mathe-Ninja","Zahlen-Detektiv","Rechen-Ritter","Super-Rechner","Zahlen-Kapitän","Mathe-Magier","Rechen-Star","Zahlen-Entdecker","Plus-Profi","Mathe-Meister","Turbo-Rechner"];
+
+const QUOTES = [
+  "Super gemacht! Jeder Tag macht dich stärker! 💪",
+  "Übung macht den Meister – und du bist auf dem besten Weg!",
+  "Fehler sind Helfer: Sie zeigen dir, was du noch lernen kannst.",
+  "Dein Gehirn ist wie ein Muskel – heute hast du es trainiert!",
+  "Toll, dass du drangeblieben bist!",
+  "Schritt für Schritt wirst du zum Rechen-Profi!",
+  "Du kannst richtig stolz auf dich sein!",
+  "Jede Aufgabe macht dich ein bisschen schlauer.",
+  "Mut zum Rechnen – den hast du! 🦁",
+  "Du gibst nicht auf. Das ist das Wichtigste!",
+  "Auch Profis haben mal klein angefangen.",
+  "Heute geübt, morgen gekonnt!",
+  "Dein Kopf hat heute richtig gerattert – klasse!",
+  "Weiter so – Zahlen sind deine Freunde!",
+  "Jeder Versuch bringt dich ein Stück weiter.",
+  "Du bist ein echtes Rechen-Talent! ⭐",
+  "Ruhig und richtig ist besser als schnell und falsch.",
+  "Gib dir selbst ein High-Five! ✋",
+  "Mathe-Muskeln: aktiviert! 🧠",
+  "Morgen wirst du noch ein bisschen besser sein!"
+];
+
+const THEMES = {
+  sonne: {label:"Sonne", ic:"☀️", sw:"#E46C00", meta:"#FFF6DD"},
+  ozean: {label:"Ozean", ic:"🌊", sw:"#1A73D1", meta:"#E8F5FF"},
+  wald:  {label:"Wald",  ic:"🌲", sw:"#2E8B3A", meta:"#ECF7E4"}
+};
+
+const AVATARS = {
+  giraffe: {label:"Giraffe", svg:`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <rect width="100" height="100" fill="#FFF3C4"/>
+    <line x1="40" y1="32" x2="36" y2="14" stroke="#C98A3A" stroke-width="5" stroke-linecap="round"/>
+    <line x1="60" y1="32" x2="64" y2="14" stroke="#C98A3A" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="36" cy="13" r="5.5" fill="#8B5A2B"/><circle cx="64" cy="13" r="5.5" fill="#8B5A2B"/>
+    <ellipse cx="24" cy="40" rx="12" ry="6" fill="#F4C542" transform="rotate(-25 24 40)"/>
+    <ellipse cx="76" cy="40" rx="12" ry="6" fill="#F4C542" transform="rotate(25 76 40)"/>
+    <ellipse cx="50" cy="55" rx="25" ry="29" fill="#F4C542"/>
+    <circle cx="37" cy="39" r="5" fill="#D9932F"/><circle cx="62" cy="37" r="4" fill="#D9932F"/>
+    <circle cx="68" cy="52" r="3.5" fill="#D9932F"/><circle cx="32" cy="54" r="3" fill="#D9932F"/>
+    <ellipse cx="50" cy="72" rx="18" ry="12" fill="#FBE3A0"/>
+    <circle cx="44" cy="70" r="2.2" fill="#8B5A2B"/><circle cx="56" cy="70" r="2.2" fill="#8B5A2B"/>
+    <path d="M43 77 Q50 81 57 77" stroke="#8B5A2B" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <circle cx="41" cy="51" r="5.5" fill="#fff"/><circle cx="59" cy="51" r="5.5" fill="#fff"/>
+    <circle cx="42" cy="52" r="3.2" fill="#2B1B0E"/><circle cx="60" cy="52" r="3.2" fill="#2B1B0E"/>
+    <circle cx="43" cy="50.8" r="1.1" fill="#fff"/><circle cx="61" cy="50.8" r="1.1" fill="#fff"/></svg>`},
+  eule: {label:"Eule", svg:`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <rect width="100" height="100" fill="#E9DDF7"/>
+    <path d="M22 34 L27 12 L40 27 Z" fill="#7A5230"/><path d="M78 34 L73 12 L60 27 Z" fill="#7A5230"/>
+    <ellipse cx="50" cy="58" rx="31" ry="34" fill="#9C6B3F"/>
+    <ellipse cx="50" cy="73" rx="18" ry="17" fill="#EBD3AA"/>
+    <path d="M41 69 q4.5 4 9 0 q4.5 4 9 0" stroke="#C9A877" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M41 77 q4.5 4 9 0 q4.5 4 9 0" stroke="#C9A877" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <circle cx="37" cy="45" r="13" fill="#fff" stroke="#E8B34A" stroke-width="3.5"/>
+    <circle cx="63" cy="45" r="13" fill="#fff" stroke="#E8B34A" stroke-width="3.5"/>
+    <circle cx="38" cy="46" r="6.5" fill="#2B1B0E"/><circle cx="62" cy="46" r="6.5" fill="#2B1B0E"/>
+    <circle cx="40" cy="43.5" r="2" fill="#fff"/><circle cx="64" cy="43.5" r="2" fill="#fff"/>
+    <path d="M45 55 L55 55 L50 63 Z" fill="#F29C1F"/></svg>`},
+  fuchs: {label:"Fuchs", svg:`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <rect width="100" height="100" fill="#FFE3CF"/>
+    <path d="M17 16 L43 34 L25 50 Z" fill="#E8701A"/><path d="M83 16 L57 34 L75 50 Z" fill="#E8701A"/>
+    <path d="M22 24 L37 35 L27 44 Z" fill="#4A2C17"/><path d="M78 24 L63 35 L73 44 Z" fill="#4A2C17"/>
+    <path d="M15 44 Q50 20 85 44 Q80 70 50 88 Q20 70 15 44 Z" fill="#F07F22"/>
+    <path d="M22 58 Q36 62 50 64 Q64 62 78 58 Q68 76 50 88 Q32 76 22 58 Z" fill="#FFFFFF"/>
+    <ellipse cx="37" cy="51" rx="4.5" ry="5.5" fill="#2B1B0E"/><ellipse cx="63" cy="51" rx="4.5" ry="5.5" fill="#2B1B0E"/>
+    <circle cx="38.5" cy="49" r="1.5" fill="#fff"/><circle cx="64.5" cy="49" r="1.5" fill="#fff"/>
+    <ellipse cx="50" cy="79" rx="5" ry="3.8" fill="#2B1B0E"/>
+    <path d="M45 84 Q50 87 55 84" stroke="#2B1B0E" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`},
+  panda: {label:"Panda", svg:`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <rect width="100" height="100" fill="#D6F0DF"/>
+    <circle cx="23" cy="27" r="12" fill="#262626"/><circle cx="77" cy="27" r="12" fill="#262626"/>
+    <ellipse cx="50" cy="56" rx="33" ry="30" fill="#FFFFFF"/>
+    <ellipse cx="36" cy="52" rx="8.5" ry="11" fill="#262626" transform="rotate(-22 36 52)"/>
+    <ellipse cx="64" cy="52" rx="8.5" ry="11" fill="#262626" transform="rotate(22 64 52)"/>
+    <circle cx="37" cy="51" r="4" fill="#fff"/><circle cx="63" cy="51" r="4" fill="#fff"/>
+    <circle cx="37.6" cy="51.6" r="2.2" fill="#262626"/><circle cx="62.4" cy="51.6" r="2.2" fill="#262626"/>
+    <circle cx="27" cy="66" r="5" fill="#FFC2D1"/><circle cx="73" cy="66" r="5" fill="#FFC2D1"/>
+    <ellipse cx="50" cy="65" rx="5.5" ry="3.8" fill="#262626"/>
+    <path d="M44 72 Q50 77 56 72" stroke="#262626" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`},
+  hase: {label:"Hase", svg:`<svg viewBox="0 0 100 100" aria-hidden="true">
+    <rect width="100" height="100" fill="#FFE1EC"/>
+    <ellipse cx="37" cy="26" rx="8.5" ry="23" fill="#D8D8E4"/><ellipse cx="63" cy="26" rx="8.5" ry="23" fill="#D8D8E4"/>
+    <ellipse cx="37" cy="27" rx="4.2" ry="16" fill="#F7A8C4"/><ellipse cx="63" cy="27" rx="4.2" ry="16" fill="#F7A8C4"/>
+    <ellipse cx="50" cy="63" rx="28" ry="26" fill="#ECECF3"/>
+    <circle cx="40" cy="58" r="4.5" fill="#2B1B2E"/><circle cx="60" cy="58" r="4.5" fill="#2B1B2E"/>
+    <circle cx="41.3" cy="56.5" r="1.4" fill="#fff"/><circle cx="61.3" cy="56.5" r="1.4" fill="#fff"/>
+    <circle cx="31" cy="68" r="4.5" fill="#FFC2D1"/><circle cx="69" cy="68" r="4.5" fill="#FFC2D1"/>
+    <path d="M46 66 L54 66 L50 70 Z" fill="#F07AA0"/>
+    <path d="M50 70 L50 74" stroke="#9A8FA0" stroke-width="1.8"/>
+    <rect x="46.5" y="74" width="7" height="6" rx="1.5" fill="#fff" stroke="#C9C3D3" stroke-width="1"/>
+    <line x1="50" y1="74" x2="50" y2="80" stroke="#C9C3D3" stroke-width="1"/>
+    <path d="M20 66 L34 68 M20 72 L34 71 M80 66 L66 68 M80 72 L66 71" stroke="#B8B0C2" stroke-width="1.5" stroke-linecap="round"/></svg>`}
+};
+
+/* ============ Speicher (localStorage) ============ */
+function defaults(){ return {profile:null, theme:"sonne", exam:{count:15, time:15}, practice:null, examRun:null, history:[]}; }
+function load(){
+  try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign(defaults(), JSON.parse(raw)); } catch(e){}
+  return defaults();
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+let S = load();
+
+/* ============ Hilfsfunktionen ============ */
+const app = document.getElementById("app");
+let timer = null, taskStart = null, examInput = "", examDeadline = 0, examStarted = 0, draft = null;
+let lastHard = [], lastEiner = [], lastExamWrong = [];
+
+const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function shuffle(a){ a = a.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+const secs = t => Math.max(1, Math.round(t));
+function clearTimers(){ if (timer){ clearInterval(timer); timer = null; } }
+function show(html){ clearTimers(); app.innerHTML = html; window.scrollTo(0,0); }
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]').setAttribute("content", THEMES[t].meta);
+}
+const avatarHTML = (id, size) => `<span class="avatar ${size}">${(AVATARS[id]||AVATARS.giraffe).svg}</span>`;
+function header(){
+  return `<header class="top">
+    <button class="icon-btn" onclick="goMenu()" aria-label="Zum Menü">🏠</button>
+    <div class="who">${avatarHTML(S.profile.avatar,"sm")}<span class="nm">${esc(S.profile.name)}</span></div>
+  </header>`;
+}
+/* Zahl mit farbigen Zehnern/Einern */
+function num(n){
+  if (n < 10) return `<span class="e">${n}</span>`;
+  return `<span class="z">${Math.floor(n/10)}</span><span class="e">${n%10}</span>`;
+}
+
+/* ============ Aufgaben ============ */
+function newTask(prev){
+  const wantCarry = Math.random() < 0.7; // meistens mit Zehnerübergang
+  for (let i=0;i<300;i++){
+    const a = rnd(11,89), b = rnd(2,100-a);
+    const carry = (a%10)+(b%10) >= 10;
+    if (carry !== wantCarry) continue;
+    if ((a%10===0 || b%10===0) && Math.random() < 0.8) continue;
+    if (prev && prev.a===a && prev.b===b) continue;
+    return {a,b};
+  }
+  return {a:34,b:17};
+}
+function examTasks(n){
+  const out = [], seen = new Set();
+  let guard = 0;
+  while (out.length < n && guard++ < 2000){
+    const t = newTask(out[out.length-1]);
+    const k = t.a+"+"+t.b;
+    if (seen.has(k)) continue;
+    seen.add(k); out.push(t);
+  }
+  return out;
+}
+
+/* ============ Rechenweg ============ */
+function stepsHTML(steps){
+  return `<div class="steps">${steps.map(([n,lbl,main,sub]) =>
+    `<div class="step"><span class="num">${n}</span><div><span class="lbl">${lbl}</span><b>${main}</b>${sub?`<span class="sub">${sub}</span>`:""}</div></div>`).join("")}</div>`;
+}
+function einerExplain(a,b){
+  const s = a+b;
+  if (s > 10){
+    const f = 10-a, r = b-f;
+    return stepsHTML([
+      ["1","Erst bis zur 10", `${a} + ${f} = 10`, `Teile die ${b}: ${b} = ${f} + ${r}`],
+      ["2","Dann den Rest dazu", `10 + ${r} = <span class="sum">${s}</span>`, ""]
+    ]);
+  }
+  if (s === 10) return stepsHTML([["🤝","Zehner-Freunde", `${a} + ${b} = <span class="sum">10</span>`, `${a} und ${b} machen zusammen genau 10.`]]);
+  let sub = "";
+  if (b <= 4){ const seq=[]; for(let i=1;i<=b;i++) seq.push(a+i); sub = `Zähl weiter: ${a} → ${seq.join(", ")}`; }
+  return stepsHTML([["👉","Einer plus Einer", `${a} + ${b} = <span class="sum">${s}</span>`, sub]]);
+}
+function explainHTML(a,b){
+  if (a < 10 && b < 10) return einerExplain(a,b);
+  const s=a+b, ea=a%10, eb=b%10, za=a-ea, zb=b-eb, es=ea+eb, zs=za+zb;
+  let tip = "";
+  if (es > 10 && ea>0 && eb>0){ const f=10-ea; tip = `Tipp: ${ea} + ${f} = 10, dann noch ${eb-f} dazu → ${es}`; }
+  else if (es === 10) tip = `${ea} und ${eb} sind Zehner-Freunde!`;
+  return stepsHTML([
+    ["🧩","Zerlegen", `<span class="z">${za}</span>+<span class="e">${ea}</span> &nbsp;und&nbsp; ${zb?`<span class="z">${zb}</span>+`:""}<span class="e">${eb}</span>`, "Zahlen in Zehner und Einer aufteilen"],
+    ["1","Einer rechnen", `<span class="e">${ea} + ${eb} = ${es}</span>`, tip],
+    ["2","Zehner rechnen", zb ? `<span class="z">${za} + ${zb} = ${zs}</span>` : `<span class="z">${za}</span>`, zb ? "" : "Keine Zehner zum Dazurechnen"],
+    ["3","Zusammen", `<span class="z">${zs}</span> + <span class="e">${es}</span> = <span class="sum">${s}</span>`, es>=10 ? `Aus 10 Einern wird 1 Zehner!` : ""]
+  ]);
+}
+
+/* ============ Profil / Einstellungen ============ */
+function screenProfile(){
+  const d = draft;
+  show(`
+    ${d.isEdit
+      ? `<header class="top"><button class="icon-btn" onclick="cancelEdit()" aria-label="Zurück zum Menü">🏠</button><h2 style="margin:0">⚙️ Einstellungen</h2></header>`
+      : `<h1>👋 Hallo! Wie heißt du?</h1>`}
+    <div class="card center">${avatarHTML(d.avatar,"lg")}<div class="big">${esc(d.name.trim() || d.suggest)}</div></div>
+    <div class="card">
+      <h2>✏️ Dein Name</h2>
+      <div class="name-row">
+        <input id="nameIn" class="name-input" maxlength="20" placeholder="${esc(d.suggest)}" value="${esc(d.name)}" autocomplete="off" oninput="draft.name=this.value" aria-label="Dein Name">
+        <button class="icon-btn" onclick="diceName()" aria-label="Zufälliger Name">🎲</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Du kannst das Feld auch leer lassen. Dann heißt du „${esc(d.suggest)}“.</p>
+    </div>
+    <div class="card">
+      <h2>🐾 Dein Tier</h2>
+      <div class="grid5">${Object.entries(AVATARS).map(([id,a]) =>
+        `<button class="pick ${d.avatar===id?"sel":""}" onclick="setDraft('avatar','${id}')" aria-label="${a.label}" aria-pressed="${d.avatar===id}">${avatarHTML(id,"md")}<span class="lbl">${a.label}</span></button>`).join("")}</div>
+    </div>
+    <div class="card">
+      <h2>🎨 Deine Farben</h2>
+      <div class="grid3">${Object.entries(THEMES).map(([id,t]) =>
+        `<button class="theme-btn ${d.theme===id?"sel":""}" onclick="setDraft('theme','${id}')" aria-pressed="${d.theme===id}"><span class="sw" style="background:${t.sw}">${t.ic}</span>${t.label}</button>`).join("")}</div>
+    </div>
+    <button class="btn" onclick="saveProfile()"><span class="ic">${d.isEdit?"💾":"🚀"}</span>${d.isEdit?"Speichern":"Los geht’s!"}</button>
+    ${d.isEdit ? `
+      <div class="card hint">💾 Name, Tier, Farben, angefangene Übungen und Prüfungsergebnisse werden nur auf diesem Gerät gespeichert.</div>
+      <button class="btn light small" onclick="resetAll()"><span class="ic">🗑️</span>Alles löschen</button>` : ""}
+  `);
+}
+function newDraft(isEdit){
+  draft = { isEdit, name: isEdit ? S.profile.name : "", avatar: isEdit ? S.profile.avatar : "giraffe", theme: S.theme, suggest: pick(NAMES) };
+}
+function setDraft(k,v){ draft[k]=v; if (k==="theme") applyTheme(v); screenProfile(); }
+function diceName(){
+  let n; do { n = pick(NAMES); } while (n === draft.name && NAMES.length > 1);
+  draft.name = n; draft.suggest = n; screenProfile();
+}
+function saveProfile(){
+  S.profile = { name: draft.name.trim() || draft.suggest, avatar: draft.avatar };
+  S.theme = draft.theme; draft = null; save(); goMenu();
+}
+function cancelEdit(){ applyTheme(S.theme); draft = null; goMenu(); }
+function openSettings(){ newDraft(true); screenProfile(); }
+function resetAll(){
+  if (!confirm("Wirklich alles löschen? Name, Fortschritt und Ergebnisse gehen verloren.")) return;
+  try { localStorage.removeItem(KEY); } catch(e){}
+  S = defaults(); applyTheme(S.theme); newDraft(false); screenProfile();
+}
+
+/* ============ Menü ============ */
+function goMenu(){
+  const p = S.practice, x = S.examRun;
+  show(`
+    <div class="card center">
+      ${avatarHTML(S.profile.avatar,"lg")}
+      <h1>Hallo, ${esc(S.profile.name)}!</h1>
+      <p class="hint">Was möchtest du heute rechnen?</p>
+    </div>
+    ${p ? `<button class="btn ok" onclick="resumePractice()"><span class="ic">▶️</span><span>Weiterüben <small>(${p.results.length} geschafft)</small></span></button>` : ""}
+    <button class="btn" onclick="startPractice('normal')"><span class="ic">✏️</span>${p ? "Neu üben" : "Üben"}</button>
+    <button class="btn" onclick="einerTraining()"><span class="ic">🎯</span>Einer-Training</button>
+    ${x ? `<button class="btn ok" onclick="examQuestion()"><span class="ic">▶️</span><span>Prüfung fortsetzen <small>(Frage ${x.index+1} von ${x.tasks.length})</small></span></button>` : ""}
+    <button class="btn" onclick="examSetup()"><span class="ic">⏱️</span>Prüfung</button>
+    <button class="btn light" onclick="openSettings()"><span class="ic">⚙️</span>Einstellungen</button>
+  `);
+}
+
+/* ============ Übungsmodus ============ */
+function startPractice(mode, list){
+  S.practice = { mode, queue: list ? shuffle(list) : [], results: [], cur: null, revealed: false, think: 0 };
+  nextTask();
+}
+function nextTask(){
+  const P = S.practice;
+  if (P.mode === "normal") P.cur = newTask(P.cur);
+  else {
+    if (!P.queue.length) return endPractice();
+    P.cur = P.queue.shift();
+  }
+  P.revealed = false; P.think = 0; taskStart = null;
+  save(); renderPractice();
+}
+function resumePractice(){ taskStart = null; renderPractice(); }
+function renderPractice(){
+  const P = S.practice, {a,b} = P.cur;
+  if (!P.revealed && taskStart === null) taskStart = Date.now();
+  const ok = P.results.filter(r=>r.ok).length, bad = P.results.length - ok;
+  const title = {normal:"✏️ Üben", repeat:"🔁 Nochmal", einer:"🎯 Einer"}[P.mode];
+  const of = P.mode === "normal" ? "" : ` von ${P.results.length + P.queue.length + 1}`;
+  show(`
+    ${header()}
+    <div class="statusbar">
+      <span class="pill">${title}</span>
+      <span class="pill">Nr. ${P.results.length+1}${of}</span>
+      <span class="pill">👍 ${ok}</span><span class="pill">👎 ${bad}</span>
+    </div>
+    <div class="card">
+      <div class="task">${num(a)} + ${num(b)} = ${P.revealed ? `<span class="sum pop" style="display:inline-block">${a+b}</span>` : "?"}</div>
+      <div class="legend"><span><i style="background:var(--zehner)"></i>Zehner</span><span><i style="background:var(--einer)"></i>Einer</span></div>
+    </div>
+    ${P.revealed ? `
+      <div class="card pop"><h2>🧠 So rechnest du</h2>${explainHTML(a,b)}</div>
+      <p class="center big">Hattest du es richtig?</p>
+      <div class="row">
+        <button class="btn ok" onclick="mark(true)"><span class="ic">👍</span>Richtig</button>
+        <button class="btn bad" onclick="mark(false)"><span class="ic">👎</span>Falsch</button>
+      </div>`
+    : `
+      <p class="center hint">📝 Rechne auf deinem Zettel. Dann schau nach!</p>
+      <button class="btn" onclick="reveal()"><span class="ic">👀</span>Lösung zeigen</button>`}
+    <button class="btn light small" onclick="endPractice()"><span class="ic">🏁</span>Übung beenden</button>
+  `);
+}
+function reveal(){
+  const P = S.practice;
+  P.think = Math.round((Date.now() - (taskStart || Date.now()))/100)/10;
+  P.revealed = true; save(); renderPractice();
+}
+function mark(ok){
+  const P = S.practice;
+  P.results.push({a:P.cur.a, b:P.cur.b, ok, time:P.think});
+  nextTask();
+}
+function buildEinerPairs(src){
+  const pairs = new Map();
+  src.forEach(r => { const x=r.a%10, y=r.b%10; if (x && y && x+y>=10) pairs.set(Math.min(x,y)+"+"+Math.max(x,y), [x,y]); });
+  if (!pairs.size) src.forEach(r => { const x=r.a%10, y=r.b%10; if (x && y) pairs.set(x+"+"+y, [x,y]); });
+  let list = [];
+  pairs.forEach(([x,y]) => { list.push({a:x,b:y}, {a:y,b:x}); });
+  list = list.slice(0,16);
+  while (list.length < 10){ const x=rnd(2,9), y=rnd(Math.max(2,10-x),9); list.push({a:x,b:y}); }
+  return list;
+}
+function einerTraining(){ startPractice("einer", lastEiner.length ? lastEiner : buildEinerPairs([])); lastEiner = []; }
+function repeatHard(){ startPractice("repeat", lastHard); }
+function endPractice(){
+  const P = S.practice; S.practice = null; save();
+  if (!P || !P.results.length) return goMenu();
+  renderSummary(P);
+}
+function resList(items, withTime, cls){
+  return `<div class="list">${items.map(r => `
+    <details class="res ${cls}"><summary>
+      <span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span>
+      ${withTime ? `<span class="meta">⏱️ ${secs(r.time)} s</span>` : ""}
+      <span class="open">👀 Weg</span>
+    </summary>${explainHTML(r.a,r.b)}</details>`).join("")}</div>`;
+}
+function renderSummary(P){
+  const R = P.results, okN = R.filter(r=>r.ok).length;
+  const avg = R.reduce((s,r)=>s+r.time,0) / R.length;
+  const wrong = R.filter(r=>!r.ok);
+  const slow = R.length >= 3 ? R.filter(r=>r.ok).sort((x,y)=>y.time-x.time).slice(0,3).filter(r=>r.time > avg) : [];
+  const hardMap = new Map(); [...wrong, ...slow].forEach(r => hardMap.set(r.a+"+"+r.b, {a:r.a, b:r.b}));
+  lastHard = [...hardMap.values()];
+  lastEiner = buildEinerPairs(lastHard.length ? lastHard : R);
+  const ex = lastEiner[0];
+  show(`
+    ${header()}
+    <div class="card center">
+      <div class="big-emoji">${wrong.length ? "💪" : "🏆"}</div>
+      <h1>Geschafft!</h1>
+      <div class="stats">
+        <div><b>${R.length}</b><small>Aufgaben</small></div>
+        <div><b class="okc">${okN}</b><small>richtig</small></div>
+        <div><b class="badc">${wrong.length}</b><small>falsch</small></div>
+        <div><b>${secs(avg)}</b><small>Ø Sekunden</small></div>
+      </div>
+    </div>
+    ${wrong.length ? `<div class="card"><h2>👎 Die waren falsch</h2>${resList(wrong,false,"wrong")}</div>` : ""}
+    ${slow.length ? `<div class="card"><h2>🐢 Hier hast du am längsten gebraucht</h2>${resList(slow,true,"")}</div>` : ""}
+    ${!lastHard.length ? `<div class="card center big">🌟 Alles richtig und flott – stark!</div>` : ""}
+    ${lastHard.length ? `<button class="btn" onclick="repeatHard()"><span class="ic">🔁</span>Diese ${lastHard.length} nochmal</button>` : ""}
+    <button class="btn" onclick="einerTraining()"><span class="ic">🎯</span>Nur die Einer üben</button>
+    <p class="center hint">Beim Einer-Training rechnest du nur die Einer, zum Beispiel ${ex.a} + ${ex.b}.</p>
+    <div class="row">
+      <button class="btn light small" onclick="startPractice('normal')"><span class="ic">✏️</span>Neu</button>
+      <button class="btn light small" onclick="goMenu()"><span class="ic">🏠</span>Menü</button>
+    </div>
+  `);
+  if (!wrong.length && R.length >= 5) confetti();
+}
+
+/* ============ Prüfungsmodus ============ */
+const LIMITS = { count:{min:5,max:30,step:1}, time:{min:5,max:60,step:5} };
+function stepper(k){
+  return `<div class="stepper">
+    <button class="step-btn" onclick="adj('${k}',-1)" aria-label="weniger">−</button>
+    <span class="step-val" id="v-${k}">${S.exam[k]}</span>
+    <button class="step-btn" onclick="adj('${k}',1)" aria-label="mehr">+</button></div>`;
+}
+function adj(k,d){
+  const L = LIMITS[k];
+  S.exam[k] = Math.min(L.max, Math.max(L.min, S.exam[k] + d*L.step));
+  save(); document.getElementById("v-"+k).textContent = S.exam[k];
+}
+function examSetup(){
+  const H = S.history.slice(-5).reverse();
+  show(`
+    ${header()}
+    <h1>⏱️ Prüfung</h1>
+    <div class="card center"><h2>❓ Wie viele Aufgaben?</h2>${stepper("count")}</div>
+    <div class="card center"><h2>⏳ Sekunden pro Aufgabe</h2>${stepper("time")}</div>
+    <p class="center hint">Tippe deine Antwort ein. Die Ergebnisse siehst du erst ganz am Ende. Viel Glück! 🍀</p>
+    <button class="btn ok" onclick="startExam()"><span class="ic">🚀</span>Prüfung starten</button>
+    ${H.length ? `<div class="card"><h2>📜 Deine letzten Prüfungen</h2><div class="list">${H.map(h => `
+      <div class="res"><div class="line"><span class="grow">${new Date(h.d).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>
+      <span class="meta">${h.ok} von ${h.n} · ${h.time} s</span><span>${starStr(h.ok/h.n)}</span></div></div>`).join("")}</div></div>` : ""}
+  `);
+}
+function starsFor(q){ return q >= 0.9 ? 3 : q >= 0.6 ? 2 : 1; }
+function starStr(q){ return "⭐".repeat(starsFor(q)); }
+function startExam(){
+  S.examRun = { tasks: examTasks(S.exam.count), answers: [], index: 0, time: S.exam.time };
+  save(); examQuestion();
+}
+function examQuestion(){
+  const X = S.examRun, t = X.tasks[X.index];
+  examInput = "";
+  show(`
+    <header class="top">
+      <button class="icon-btn" onclick="goMenu()" aria-label="Pause – zum Menü">⏸️</button>
+      <div class="who"><span class="nm">Frage ${X.index+1} von ${X.tasks.length}</span></div>
+      <span class="pill secs" id="secs">⏳ ${X.time}</span>
+    </header>
+    <div class="bar" id="bar"><i style="width:100%"></i></div>
+    <div class="card"><div class="task">${t.a} + ${t.b} = <span class="answer-box" id="ans">&nbsp;</span></div></div>
+    <div class="keypad">
+      ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="key" onclick="kp('${n}')">${n}</button>`).join("")}
+      <button class="key" onclick="kp('del')" aria-label="Löschen">⌫</button>
+      <button class="key" onclick="kp('0')">0</button>
+      <button class="key go" onclick="submitExam()" aria-label="Weiter">✔</button>
+    </div>
+  `);
+  examStarted = Date.now();
+  examDeadline = examStarted + X.time*1000;
+  timer = setInterval(tick, 100); tick();
+}
+function tick(){
+  const X = S.examRun; if (!X) return clearTimers();
+  const rem = (examDeadline - Date.now())/1000;
+  if (rem <= 0) return submitExam();
+  const bar = document.getElementById("bar"), sEl = document.getElementById("secs");
+  if (!bar) return clearTimers();
+  bar.firstElementChild.style.width = (rem / X.time * 100) + "%";
+  const low = rem <= 5;
+  bar.classList.toggle("low", low); sEl.classList.toggle("low", low);
+  sEl.textContent = "⏳ " + Math.ceil(rem);
+}
+function kp(k){
+  if (k === "del") examInput = examInput.slice(0,-1);
+  else if (examInput.length < 3) examInput = (examInput === "0" ? "" : examInput) + k;
+  const el = document.getElementById("ans");
+  if (el) el.textContent = examInput || "\u00a0";
+}
+function submitExam(){
+  clearTimers();
+  const X = S.examRun; if (!X) return;
+  X.answers.push({ v: examInput === "" ? null : parseInt(examInput,10), t: Math.round((Date.now()-examStarted)/100)/10 });
+  X.index++; save();
+  if (X.index >= X.tasks.length) finishExam(); else examQuestion();
+}
+function finishExam(){
+  const X = S.examRun; S.examRun = null;
+  const res = X.tasks.map((t,i) => ({ a:t.a, b:t.b, v:X.answers[i].v, ok: X.answers[i].v === t.a+t.b }));
+  const okN = res.filter(r=>r.ok).length, n = res.length, q = okN/n, st = starsFor(q);
+  S.history.push({ d: Date.now(), ok: okN, n, time: X.time }); S.history = S.history.slice(-20); save();
+  lastExamWrong = res.filter(r=>!r.ok).map(r => ({a:r.a, b:r.b}));
+  const head = q === 1 ? "Perfekt! 🏆" : q >= 0.8 ? "Super gemacht!" : q >= 0.5 ? "Gut gemacht!" : "Weiter so!";
+  show(`
+    ${header()}
+    <div class="card center">
+      <div class="stars">${"⭐".repeat(st)}${'<span class="dim">⭐</span>'.repeat(3-st)}</div>
+      <h1>${head}</h1>
+      <p class="score">${okN} von ${n} richtig</p>
+    </div>
+    <div class="card quote center"><span class="q-ic">💬</span>${pick(QUOTES)}</div>
+    <div class="card"><h2>📋 Alle Ergebnisse</h2><div class="list">${res.map((r,i) => r.ok
+      ? `<div class="res"><div class="line"><span>✅</span><span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span></div></div>`
+      : `<details class="res wrong"><summary><span>❌</span><span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span><span class="meta">Du: ${r.v===null ? "–" : r.v}</span><span class="open">👀 Weg</span></summary>${explainHTML(r.a,r.b)}</details>`).join("")}</div></div>
+    ${lastExamWrong.length ? `<button class="btn" onclick="startPractice('repeat', lastExamWrong)"><span class="ic">✏️</span>Falsche Aufgaben üben</button>` : ""}
+    <div class="row">
+      <button class="btn small" onclick="startExam()"><span class="ic">🔁</span>Nochmal</button>
+      <button class="btn light small" onclick="goMenu()"><span class="ic">🏠</span>Menü</button>
+    </div>
+  `);
+  if (q >= 0.9) confetti();
+}
+
+/* Tastatur am Computer */
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("ans")) return;
+  if (/^[0-9]$/.test(e.key)) kp(e.key);
+  else if (e.key === "Backspace") kp("del");
+  else if (e.key === "Enter") submitExam();
+});
+
+/* ============ Konfetti ============ */
+function confetti(){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const em = ["🎉","⭐","🎈","✨","🏆"];
+  for (let i=0;i<36;i++){
+    const s = document.createElement("span");
+    s.className = "confetti"; s.textContent = pick(em);
+    s.style.left = Math.random()*100 + "vw";
+    s.style.animationDuration = (2 + Math.random()*2) + "s";
+    s.style.animationDelay = Math.random()*0.8 + "s";
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 5000);
+  }
+}
+
+/* ============ Start ============ */
+applyTheme(S.theme);
+if (!S.profile){ newDraft(false); screenProfile(); } else goMenu();
+</script>
+</body>
+</html>
