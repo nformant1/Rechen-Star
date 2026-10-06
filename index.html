@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#FFF6DD">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Plus-Profi">
-<title>Plus-Profi – Rechnen bis 100</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>➕</text></svg>">
+<meta name="apple-mobile-web-app-title" content="Rechen-Star">
+<title>Rechen-Star – Rechnen üben</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⭐</text></svg>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -37,10 +37,10 @@ h2{font-size:1.3rem;margin-bottom:12px;font-weight:700}
 .center{text-align:center}
 .hint{color:var(--muted);font-size:1.05rem}
 .big{font-size:1.35rem;font-weight:700}
+.warn{color:var(--bad);font-weight:700;font-size:1.05rem;margin-top:10px}
 
 .card{background:var(--card);border-radius:28px;padding:20px;box-shadow:0 5px 0 var(--edge)}
 
-/* Große Knöpfe wie Bauklötze */
 .btn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:78px;padding:14px 20px;border-radius:24px;
   font-size:1.45rem;font-weight:700;background:var(--primary);color:#fff;box-shadow:0 7px 0 var(--primary-dark);transition:transform .07s,box-shadow .07s}
 .btn:active{transform:translateY(6px);box-shadow:0 1px 0 var(--primary-dark)}
@@ -72,6 +72,16 @@ h2{font-size:1.3rem;margin-bottom:12px;font-weight:700}
 .pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);padding:8px 14px;border-radius:999px;font-weight:700;font-size:1.05rem;box-shadow:0 3px 0 var(--edge)}
 .statusbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 
+/* Rechenarten */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.op-btn{position:relative;padding:12px 4px 10px;border-radius:22px;background:var(--soft);border:4px solid transparent;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;font-size:1.05rem}
+.op-btn .sym{width:62px;height:62px;border-radius:18px;background:var(--card);color:var(--muted);display:grid;place-items:center;font-size:2.4rem;font-weight:800;line-height:1}
+.op-btn .chk{position:absolute;top:6px;right:8px;font-size:1.1rem}
+.op-btn.sel{border-color:var(--primary);background:var(--card)}
+.op-btn.sel .sym{background:var(--primary);color:#fff}
+.op-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.op-pill{width:46px;height:46px;border-radius:14px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:1.7rem;font-weight:800;line-height:1}
+
 /* Aufgabe */
 .task{font-size:clamp(2.6rem,11.5vw,5.6rem);font-weight:800;text-align:center;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums}
 .e{color:var(--einer)} .z{color:var(--zehner)}
@@ -85,6 +95,7 @@ h2{font-size:1.3rem;margin-bottom:12px;font-weight:700}
 .step .num{width:44px;height:44px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.2rem;flex:none}
 .step .lbl{display:block;color:var(--muted);font-size:.95rem;font-weight:700}
 .step b{display:block;font-size:1.55rem;font-variant-numeric:tabular-nums}
+.step b.long{font-size:1.15rem;line-height:1.5}
 .step .sub{display:block;font-size:1rem;color:var(--text);margin-top:2px}
 
 /* Profil */
@@ -148,6 +159,7 @@ h2{font-size:1.3rem;margin-bottom:12px;font-weight:700}
 .confetti{position:fixed;top:-50px;font-size:2rem;pointer-events:none;z-index:50;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(115vh) rotate(600deg)}}
 @media (min-width:700px){body{font-size:22px}}
+@media (max-width:440px){.grid4{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:380px){.grid5{gap:6px}.pick .lbl{font-size:.7rem}.btn{font-size:1.25rem}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -184,6 +196,14 @@ const QUOTES = [
   "Mathe-Muskeln: aktiviert! 🧠",
   "Morgen wirst du noch ein bisschen besser sein!"
 ];
+
+const OPS = {
+  "+": {label:"Plus",    sym:"+"},
+  "-": {label:"Minus",   sym:"−"},
+  "*": {label:"Mal",     sym:"·"},
+  "/": {label:"Geteilt", sym:":"}
+};
+const OP_ORDER = ["+","-","*","/"];
 
 const THEMES = {
   sonne: {label:"Sonne", ic:"☀️", sw:"#E46C00", meta:"#FFF6DD"},
@@ -257,9 +277,17 @@ const AVATARS = {
 };
 
 /* ============ Speicher (localStorage) ============ */
-function defaults(){ return {profile:null, theme:"sonne", exam:{count:15, time:15}, practice:null, examRun:null, history:[]}; }
+function defaults(){ return {profile:null, theme:"sonne", ops:["+"], exam:{count:15, time:15}, practice:null, examRun:null, history:[]}; }
 function load(){
-  try { const raw = localStorage.getItem(KEY); if (raw) return Object.assign(defaults(), JSON.parse(raw)); } catch(e){}
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw){
+      const s = Object.assign(defaults(), JSON.parse(raw));
+      s.ops = (Array.isArray(s.ops) ? s.ops : []).filter(o => OPS[o]);
+      if (!s.ops.length) s.ops = ["+"];
+      return s;
+    }
+  } catch(e){}
   return defaults();
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
@@ -268,7 +296,7 @@ let S = load();
 /* ============ Hilfsfunktionen ============ */
 const app = document.getElementById("app");
 let timer = null, taskStart = null, examInput = "", examDeadline = 0, examStarted = 0, draft = null;
-let lastHard = [], lastEiner = [], lastExamWrong = [];
+let lastHard = [], lastBasics = [], lastExamWrong = [];
 
 const rnd = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
@@ -288,43 +316,104 @@ function header(){
     <div class="who">${avatarHTML(S.profile.avatar,"sm")}<span class="nm">${esc(S.profile.name)}</span></div>
   </header>`;
 }
-/* Zahl mit farbigen Zehnern/Einern */
+const opPills = ops => `<div class="op-pills">${OP_ORDER.filter(o => ops.includes(o)).map(o => `<span class="op-pill" title="${OPS[o].label}">${OPS[o].sym}</span>`).join("")}</div>`;
+
+/* Aufgaben-Objekt: {op, a, b} – alte Spielstände ohne op sind Plus */
+const opOf = t => t.op || "+";
+const keyOf = t => opOf(t) + t.a + "_" + t.b;
+function calc(t){
+  switch (opOf(t)){
+    case "-": return t.a - t.b;
+    case "*": return t.a * t.b;
+    case "/": return t.a / t.b;
+    default:  return t.a + t.b;
+  }
+}
+/* Zahl mit farbigen Zehnern/Einern (nur bei Plus/Minus sinnvoll) */
 function num(n){
   if (n < 10) return `<span class="e">${n}</span>`;
   return `<span class="z">${Math.floor(n/10)}</span><span class="e">${n%10}</span>`;
 }
+function taskText(t, colored){
+  const o = opOf(t), sym = OPS[o].sym;
+  if (colored && (o === "+" || o === "-")) return `${num(t.a)} ${sym} ${num(t.b)}`;
+  return `${t.a} ${sym} ${t.b}`;
+}
 
-/* ============ Aufgaben ============ */
-function newTask(prev){
+/* ============ Aufgaben erzeugen ============ */
+function genPlus(){
   const wantCarry = Math.random() < 0.7; // meistens mit Zehnerübergang
   for (let i=0;i<300;i++){
     const a = rnd(11,89), b = rnd(2,100-a);
     const carry = (a%10)+(b%10) >= 10;
     if (carry !== wantCarry) continue;
     if ((a%10===0 || b%10===0) && Math.random() < 0.8) continue;
-    if (prev && prev.a===a && prev.b===b) continue;
-    return {a,b};
+    return {op:"+", a, b};
   }
-  return {a:34,b:17};
+  return {op:"+", a:34, b:17};
 }
-function examTasks(n){
-  const out = [], seen = new Set();
-  let guard = 0;
-  while (out.length < n && guard++ < 2000){
-    const t = newTask(out[out.length-1]);
-    const k = t.a+"+"+t.b;
-    if (seen.has(k)) continue;
-    seen.add(k); out.push(t);
+function genMinus(){
+  const wantCross = Math.random() < 0.7; // meistens mit Zehnerübergang
+  for (let i=0;i<300;i++){
+    const a = rnd(21,99), b = rnd(3,a-2);
+    const cross = (a%10) < (b%10);
+    if (cross !== wantCross) continue;
+    if (b%10===0 && Math.random() < 0.8) continue;
+    return {op:"-", a, b};
   }
+  return {op:"-", a:52, b:17};
+}
+function genMul(){
+  for (let i=0;i<50;i++){
+    const a = rnd(2,10), b = rnd(2,10);
+    if ((a===10 || b===10) && Math.random() < 0.6) continue; // Mal 10 seltener
+    return {op:"*", a, b};
+  }
+  return {op:"*", a:7, b:8};
+}
+function genDiv(){
+  const m = genMul();
+  return {op:"/", a:m.a*m.b, b:m.b};
+}
+function gen(op){
+  return op === "-" ? genMinus() : op === "*" ? genMul() : op === "/" ? genDiv() : genPlus();
+}
+function newTask(prev){
+  for (let i=0;i<50;i++){
+    const t = gen(pick(S.ops));
+    if (!prev || keyOf(t) !== keyOf(prev)) return t;
+  }
+  return gen(S.ops[0]);
+}
+/* Prüfung: Rechenarten möglichst gleich oft */
+function examTasks(n){
+  const ops = S.ops, k = ops.length;
+  let plan = [];
+  ops.forEach(o => { for (let i=0;i<Math.floor(n/k);i++) plan.push(o); });
+  shuffle(ops).slice(0, n % k).forEach(o => plan.push(o));
+  plan = shuffle(plan);
+  const out = [], seen = new Set();
+  plan.forEach(o => {
+    let t, guard = 0;
+    do { t = gen(o); } while (seen.has(keyOf(t)) && guard++ < 200);
+    seen.add(keyOf(t)); out.push(t);
+  });
   return out;
 }
 
-/* ============ Rechenweg ============ */
+/* ============ Rechenwege ============ */
 function stepsHTML(steps){
-  return `<div class="steps">${steps.map(([n,lbl,main,sub]) =>
-    `<div class="step"><span class="num">${n}</span><div><span class="lbl">${lbl}</span><b>${main}</b>${sub?`<span class="sub">${sub}</span>`:""}</div></div>`).join("")}</div>`;
+  return `<div class="steps">${steps.map(([n,lbl,main,sub,cls]) =>
+    `<div class="step"><span class="num">${n}</span><div><span class="lbl">${lbl}</span><b class="${cls||""}">${main}</b>${sub?`<span class="sub">${sub}</span>`:""}</div></div>`).join("")}</div>`;
 }
-function einerExplain(a,b){
+function explainHTML(t){
+  const o = opOf(t), a = t.a, b = t.b;
+  if (o === "+") return (a < 10 && b < 10) ? plusSmall(a,b) : plusBig(a,b);
+  if (o === "-") return (a < 20 && b < 10) ? minusSmall(a,b) : minusBig(a,b);
+  if (o === "*") return mulExplain(a,b);
+  return divExplain(a,b);
+}
+function plusSmall(a,b){
   const s = a+b;
   if (s > 10){
     const f = 10-a, r = b-f;
@@ -338,8 +427,7 @@ function einerExplain(a,b){
   if (b <= 4){ const seq=[]; for(let i=1;i<=b;i++) seq.push(a+i); sub = `Zähl weiter: ${a} → ${seq.join(", ")}`; }
   return stepsHTML([["👉","Einer plus Einer", `${a} + ${b} = <span class="sum">${s}</span>`, sub]]);
 }
-function explainHTML(a,b){
-  if (a < 10 && b < 10) return einerExplain(a,b);
+function plusBig(a,b){
   const s=a+b, ea=a%10, eb=b%10, za=a-ea, zb=b-eb, es=ea+eb, zs=za+zb;
   let tip = "";
   if (es > 10 && ea>0 && eb>0){ const f=10-ea; tip = `Tipp: ${ea} + ${f} = 10, dann noch ${eb-f} dazu → ${es}`; }
@@ -349,6 +437,81 @@ function explainHTML(a,b){
     ["1","Einer rechnen", `<span class="e">${ea} + ${eb} = ${es}</span>`, tip],
     ["2","Zehner rechnen", zb ? `<span class="z">${za} + ${zb} = ${zs}</span>` : `<span class="z">${za}</span>`, zb ? "" : "Keine Zehner zum Dazurechnen"],
     ["3","Zusammen", `<span class="z">${zs}</span> + <span class="e">${es}</span> = <span class="sum">${s}</span>`, es>=10 ? `Aus 10 Einern wird 1 Zehner!` : ""]
+  ]);
+}
+function minusSmall(a,b){
+  const s = a-b, r = a%10;
+  if (a >= 10 && b > r && r > 0){
+    const rest = b-r;
+    return stepsHTML([
+      ["1","Erst runter zur 10", `${a} − ${r} = 10`, `Teile die ${b}: ${b} = ${r} + ${rest}`],
+      ["2","Dann den Rest weg", `10 − ${rest} = <span class="sum">${s}</span>`, ""]
+    ]);
+  }
+  if (a === 10) return stepsHTML([["🤝","Zehner-Freunde", `10 − ${b} = <span class="sum">${s}</span>`, `${b} und ${s} machen zusammen 10.`]]);
+  let sub = "";
+  if (b <= 4){ const seq=[]; for(let i=1;i<=b;i++) seq.push(a-i); sub = `Zähl zurück: ${a} → ${seq.join(", ")}`; }
+  return stepsHTML([["👈","Einer weg", `${a} − ${b} = <span class="sum">${s}</span>`, sub]]);
+}
+function minusBig(a,b){
+  const s = a-b, eb = b%10, zb = b-eb, m = a-zb;
+  const steps = [];
+  if (zb && eb) steps.push(["🧩","Zerlegen", `${b} = <span class="z">${zb}</span> + <span class="e">${eb}</span>`, "Die zweite Zahl in Zehner und Einer aufteilen"]);
+  let n = 1;
+  if (zb) steps.push([String(n++),"Zehner abziehen", `${a} − <span class="z">${zb}</span> = ${eb ? m : `<span class="sum">${m}</span>`}`, ""]);
+  if (eb){
+    const r = m % 10;
+    let tip = "";
+    if (eb > r && r > 0) tip = `Tipp: ${m} − ${r} = ${m-r}, dann noch − ${eb-r} → ${s}`;
+    else if (eb > r && r === 0) tip = `Denk an 10 − ${eb} = ${10-eb}. Also ${m} − ${eb} = ${s}`;
+    steps.push([String(n++),"Einer abziehen", `${m} − <span class="e">${eb}</span> = <span class="sum">${s}</span>`, tip]);
+  }
+  steps.push(["✔️","Probe", `${s} + ${b} = ${a}`, "Rückwärts gerechnet stimmt es!"]);
+  return stepsHTML(steps);
+}
+function mulExplain(a,b){
+  const p = a*b, small = Math.min(a,b), big = Math.max(a,b);
+  if (small === 1) return stepsHTML([["1️⃣","Mal 1", `${a} · ${b} = <span class="sum">${p}</span>`, "Mal 1 – die Zahl bleibt gleich."]]);
+  if (a === 10 || b === 10){
+    const o = a === 10 ? b : a;
+    return stepsHTML([["🔟","Mal 10", `${a} · ${b} = <span class="sum">${p}</span>`, `Bei mal 10 hängst du an die ${o} eine 0 an.`]]);
+  }
+  if (small === 2) return stepsHTML([["✌️","Verdoppeln", `${big} + ${big} = <span class="sum">${p}</span>`, `2 mal ${big} heißt: die ${big} doppelt.`]]);
+  if (a === 5 || b === 5){
+    const o = a === 5 ? b : a;
+    return stepsHTML([
+      ["1","Erst mal 10", `10 · ${o} = ${10*o}`, "5 ist die Hälfte von 10"],
+      ["2","Dann die Hälfte", `Hälfte von ${10*o} = <span class="sum">${p}</span>`, ""]
+    ]);
+  }
+  if (big === 9){
+    return stepsHTML([
+      ["1","Erst mal 10", `10 · ${small} = ${10*small}`, "9 ist eins weniger als 10"],
+      ["2","Einmal weniger", `${10*small} − ${small} = <span class="sum">${p}</span>`, ""]
+    ]);
+  }
+  if (big > 5){
+    const r = big-5;
+    return stepsHTML([
+      ["🧩","Zerlegen", `${big} = 5 + ${r}`, "Aus einer schweren werden zwei leichte Aufgaben"],
+      ["1","Erst 5 mal", `5 · ${small} = ${5*small}`, ""],
+      ["2","Dann der Rest", `${r} · ${small} = ${r*small}`, ""],
+      ["3","Zusammen", `${5*small} + ${r*small} = <span class="sum">${p}</span>`, ""]
+    ]);
+  }
+  return stepsHTML([["➕","Plus-Kette", `${Array(small).fill(big).join(" + ")} = <span class="sum">${p}</span>`, `${small} mal die ${big} zusammenzählen`]]);
+}
+function divExplain(c,b){
+  const q = c/b;
+  if (b === 10) return stepsHTML([
+    ["❓","Umkehr-Frage", `? · 10 = ${c}`, ""],
+    ["🔟","Durch 10", `${c} : 10 = <span class="sum">${q}</span>`, "Bei geteilt durch 10 fällt die 0 am Ende weg."]
+  ]);
+  const seq = []; for (let i=1;i<=q;i++) seq.push(b*i);
+  return stepsHTML([
+    ["❓","Umkehr-Frage", `? · ${b} = ${c}`, `Wie oft passt die ${b} in die ${c}?`],
+    ["1",`Die ${b}er-Reihe`, seq.join(", "), `Das sind ${q} Schritte bis zur ${c}`, "long"],
+    ["2","Lösung", `${c} : ${b} = <span class="sum">${q}</span>`, `Probe: ${q} · ${b} = ${c}`]
   ]);
 }
 
@@ -369,6 +532,15 @@ function screenProfile(){
       <p class="hint" style="margin-top:10px">Du kannst das Feld auch leer lassen. Dann heißt du „${esc(d.suggest)}“.</p>
     </div>
     <div class="card">
+      <h2>🧮 Was möchtest du rechnen?</h2>
+      <div class="grid4">${OP_ORDER.map(o => {
+        const on = d.ops.includes(o);
+        return `<button class="op-btn ${on?"sel":""}" onclick="toggleOp('${o}')" aria-pressed="${on}">
+          ${on ? '<span class="chk">✅</span>' : ""}<span class="sym">${OPS[o].sym}</span>${OPS[o].label}</button>`;
+      }).join("")}</div>
+      ${d.opsMsg ? `<p class="warn">☝️ Eine Rechenart muss immer an sein.</p>` : `<p class="hint" style="margin-top:10px">Tippe an, was du üben willst. Du kannst mehrere wählen.</p>`}
+    </div>
+    <div class="card">
       <h2>🐾 Dein Tier</h2>
       <div class="grid5">${Object.entries(AVATARS).map(([id,a]) =>
         `<button class="pick ${d.avatar===id?"sel":""}" onclick="setDraft('avatar','${id}')" aria-label="${a.label}" aria-pressed="${d.avatar===id}">${avatarHTML(id,"md")}<span class="lbl">${a.label}</span></button>`).join("")}</div>
@@ -380,21 +552,29 @@ function screenProfile(){
     </div>
     <button class="btn" onclick="saveProfile()"><span class="ic">${d.isEdit?"💾":"🚀"}</span>${d.isEdit?"Speichern":"Los geht’s!"}</button>
     ${d.isEdit ? `
-      <div class="card hint">💾 Name, Tier, Farben, angefangene Übungen und Prüfungsergebnisse werden nur auf diesem Gerät gespeichert.</div>
+      <div class="card hint">💾 Name, Tier, Farben, Rechenarten, angefangene Übungen und Prüfungsergebnisse werden nur auf diesem Gerät gespeichert.</div>
       <button class="btn light small" onclick="resetAll()"><span class="ic">🗑️</span>Alles löschen</button>` : ""}
   `);
 }
 function newDraft(isEdit){
-  draft = { isEdit, name: isEdit ? S.profile.name : "", avatar: isEdit ? S.profile.avatar : "giraffe", theme: S.theme, suggest: pick(NAMES) };
+  draft = { isEdit, name: isEdit ? S.profile.name : "", avatar: isEdit ? S.profile.avatar : "giraffe",
+            theme: S.theme, ops: S.ops.slice(), opsMsg: false, suggest: pick(NAMES) };
 }
-function setDraft(k,v){ draft[k]=v; if (k==="theme") applyTheme(v); screenProfile(); }
+function setDraft(k,v){ draft[k]=v; draft.opsMsg=false; if (k==="theme") applyTheme(v); screenProfile(); }
+function toggleOp(o){
+  if (draft.ops.includes(o)){
+    if (draft.ops.length === 1){ draft.opsMsg = true; return screenProfile(); }
+    draft.ops = draft.ops.filter(x => x !== o);
+  } else draft.ops = OP_ORDER.filter(x => x === o || draft.ops.includes(x));
+  draft.opsMsg = false; screenProfile();
+}
 function diceName(){
   let n; do { n = pick(NAMES); } while (n === draft.name && NAMES.length > 1);
   draft.name = n; draft.suggest = n; screenProfile();
 }
 function saveProfile(){
   S.profile = { name: draft.name.trim() || draft.suggest, avatar: draft.avatar };
-  S.theme = draft.theme; draft = null; save(); goMenu();
+  S.theme = draft.theme; S.ops = draft.ops.slice(); draft = null; save(); goMenu();
 }
 function cancelEdit(){ applyTheme(S.theme); draft = null; goMenu(); }
 function openSettings(){ newDraft(true); screenProfile(); }
@@ -412,10 +592,11 @@ function goMenu(){
       ${avatarHTML(S.profile.avatar,"lg")}
       <h1>Hallo, ${esc(S.profile.name)}!</h1>
       <p class="hint">Was möchtest du heute rechnen?</p>
+      ${opPills(S.ops)}
     </div>
     ${p ? `<button class="btn ok" onclick="resumePractice()"><span class="ic">▶️</span><span>Weiterüben <small>(${p.results.length} geschafft)</small></span></button>` : ""}
     <button class="btn" onclick="startPractice('normal')"><span class="ic">✏️</span>${p ? "Neu üben" : "Üben"}</button>
-    <button class="btn" onclick="einerTraining()"><span class="ic">🎯</span>Einer-Training</button>
+    <button class="btn" onclick="basicsTraining()"><span class="ic">🎯</span>Grundlagen-Training</button>
     ${x ? `<button class="btn ok" onclick="examQuestion()"><span class="ic">▶️</span><span>Prüfung fortsetzen <small>(Frage ${x.index+1} von ${x.tasks.length})</small></span></button>` : ""}
     <button class="btn" onclick="examSetup()"><span class="ic">⏱️</span>Prüfung</button>
     <button class="btn light" onclick="openSettings()"><span class="ic">⚙️</span>Einstellungen</button>
@@ -439,11 +620,12 @@ function nextTask(){
 }
 function resumePractice(){ taskStart = null; renderPractice(); }
 function renderPractice(){
-  const P = S.practice, {a,b} = P.cur;
+  const P = S.practice, t = P.cur, o = opOf(t);
   if (!P.revealed && taskStart === null) taskStart = Date.now();
   const ok = P.results.filter(r=>r.ok).length, bad = P.results.length - ok;
-  const title = {normal:"✏️ Üben", repeat:"🔁 Nochmal", einer:"🎯 Einer"}[P.mode];
+  const title = {normal:"✏️ Üben", repeat:"🔁 Nochmal", einer:"🎯 Grundlagen"}[P.mode];
   const of = P.mode === "normal" ? "" : ` von ${P.results.length + P.queue.length + 1}`;
+  const placeValue = o === "+" || o === "-";
   show(`
     ${header()}
     <div class="statusbar">
@@ -452,16 +634,16 @@ function renderPractice(){
       <span class="pill">👍 ${ok}</span><span class="pill">👎 ${bad}</span>
     </div>
     <div class="card">
-      <div class="task">${num(a)} + ${num(b)} = ${P.revealed ? `<span class="sum pop" style="display:inline-block">${a+b}</span>` : "?"}</div>
-      <div class="legend"><span><i style="background:var(--zehner)"></i>Zehner</span><span><i style="background:var(--einer)"></i>Einer</span></div>
+      <div class="task">${taskText(t, true)} = ${P.revealed ? `<span class="sum pop" style="display:inline-block">${calc(t)}</span>` : "?"}</div>
+      ${placeValue ? `<div class="legend"><span><i style="background:var(--zehner)"></i>Zehner</span><span><i style="background:var(--einer)"></i>Einer</span></div>` : ""}
     </div>
     ${P.revealed ? `
-      <div class="card pop"><h2>🧠 So rechnest du</h2>${explainHTML(a,b)}</div>
       <p class="center big">Hattest du es richtig?</p>
       <div class="row">
         <button class="btn ok" onclick="mark(true)"><span class="ic">👍</span>Richtig</button>
         <button class="btn bad" onclick="mark(false)"><span class="ic">👎</span>Falsch</button>
-      </div>`
+      </div>
+      <div class="card pop"><h2>🧠 So rechnest du</h2>${explainHTML(t)}</div>`
     : `
       <p class="center hint">📝 Rechne auf deinem Zettel. Dann schau nach!</p>
       <button class="btn" onclick="reveal()"><span class="ic">👀</span>Lösung zeigen</button>`}
@@ -475,20 +657,37 @@ function reveal(){
 }
 function mark(ok){
   const P = S.practice;
-  P.results.push({a:P.cur.a, b:P.cur.b, ok, time:P.think});
+  P.results.push({op:opOf(P.cur), a:P.cur.a, b:P.cur.b, ok, time:P.think});
   nextTask();
 }
-function buildEinerPairs(src){
-  const pairs = new Map();
-  src.forEach(r => { const x=r.a%10, y=r.b%10; if (x && y && x+y>=10) pairs.set(Math.min(x,y)+"+"+Math.max(x,y), [x,y]); });
-  if (!pairs.size) src.forEach(r => { const x=r.a%10, y=r.b%10; if (x && y) pairs.set(x+"+"+y, [x,y]); });
-  let list = [];
-  pairs.forEach(([x,y]) => { list.push({a:x,b:y}, {a:y,b:x}); });
-  list = list.slice(0,16);
-  while (list.length < 10){ const x=rnd(2,9), y=rnd(Math.max(2,10-x),9); list.push({a:x,b:y}); }
+
+/* Grundlagen: die kleinen Kernaufgaben hinter den schwierigen Aufgaben */
+function genBasic(o){
+  if (o === "+"){ const x = rnd(2,9); return {op:"+", a:x, b:rnd(Math.max(2,10-x),9)}; }
+  if (o === "-"){ const x = rnd(11,18); return {op:"-", a:x, b:rnd(x%10+1,9)}; }
+  return gen(o);
+}
+function basicsFrom(src){
+  const m = new Map(), add = t => m.set(keyOf(t), t);
+  src.forEach(t => {
+    const o = opOf(t), x = t.a%10, y = t.b%10;
+    if (o === "+"){
+      if (t.a < 10 && t.b < 10){ add({op:"+",a:t.a,b:t.b}); add({op:"+",a:t.b,b:t.a}); }
+      else if (x && y && x+y >= 10){ add({op:"+",a:x,b:y}); add({op:"+",a:y,b:x}); }
+    } else if (o === "-"){
+      if (t.a < 20 && t.b < 10) add({op:"-",a:t.a,b:t.b});
+      else if (y && x < y) add({op:"-",a:10+x,b:y});
+    } else if (o === "*"){
+      add({op:"*",a:t.a,b:t.b}); if (t.a !== t.b) add({op:"*",a:t.b,b:t.a});
+    } else {
+      add({op:"/",a:t.a,b:t.b}); add({op:"*",a:t.a/t.b,b:t.b});
+    }
+  });
+  const list = [...m.values()].slice(0,16);
+  while (list.length < 10) list.push(genBasic(pick(S.ops)));
   return list;
 }
-function einerTraining(){ startPractice("einer", lastEiner.length ? lastEiner : buildEinerPairs([])); lastEiner = []; }
+function basicsTraining(){ startPractice("einer", lastBasics.length ? lastBasics : basicsFrom([])); lastBasics = []; }
 function repeatHard(){ startPractice("repeat", lastHard); }
 function endPractice(){
   const P = S.practice; S.practice = null; save();
@@ -498,20 +697,20 @@ function endPractice(){
 function resList(items, withTime, cls){
   return `<div class="list">${items.map(r => `
     <details class="res ${cls}"><summary>
-      <span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span>
+      <span class="grow">${taskText(r)} = ${calc(r)}</span>
       ${withTime ? `<span class="meta">⏱️ ${secs(r.time)} s</span>` : ""}
       <span class="open">👀 Weg</span>
-    </summary>${explainHTML(r.a,r.b)}</details>`).join("")}</div>`;
+    </summary>${explainHTML(r)}</details>`).join("")}</div>`;
 }
 function renderSummary(P){
   const R = P.results, okN = R.filter(r=>r.ok).length;
   const avg = R.reduce((s,r)=>s+r.time,0) / R.length;
   const wrong = R.filter(r=>!r.ok);
   const slow = R.length >= 3 ? R.filter(r=>r.ok).sort((x,y)=>y.time-x.time).slice(0,3).filter(r=>r.time > avg) : [];
-  const hardMap = new Map(); [...wrong, ...slow].forEach(r => hardMap.set(r.a+"+"+r.b, {a:r.a, b:r.b}));
+  const hardMap = new Map(); [...wrong, ...slow].forEach(r => hardMap.set(keyOf(r), {op:opOf(r), a:r.a, b:r.b}));
   lastHard = [...hardMap.values()];
-  lastEiner = buildEinerPairs(lastHard.length ? lastHard : R);
-  const ex = lastEiner[0];
+  lastBasics = basicsFrom(lastHard.length ? lastHard : R);
+  const ex = lastBasics[0];
   show(`
     ${header()}
     <div class="card center">
@@ -528,8 +727,8 @@ function renderSummary(P){
     ${slow.length ? `<div class="card"><h2>🐢 Hier hast du am längsten gebraucht</h2>${resList(slow,true,"")}</div>` : ""}
     ${!lastHard.length ? `<div class="card center big">🌟 Alles richtig und flott – stark!</div>` : ""}
     ${lastHard.length ? `<button class="btn" onclick="repeatHard()"><span class="ic">🔁</span>Diese ${lastHard.length} nochmal</button>` : ""}
-    <button class="btn" onclick="einerTraining()"><span class="ic">🎯</span>Nur die Einer üben</button>
-    <p class="center hint">Beim Einer-Training rechnest du nur die Einer, zum Beispiel ${ex.a} + ${ex.b}.</p>
+    <button class="btn" onclick="basicsTraining()"><span class="ic">🎯</span>Grundlagen üben</button>
+    <p class="center hint">Hier übst du die kleinen Aufgaben, die in den schweren stecken, zum Beispiel ${taskText(ex)}.</p>
     <div class="row">
       <button class="btn light small" onclick="startPractice('normal')"><span class="ic">✏️</span>Neu</button>
       <button class="btn light small" onclick="goMenu()"><span class="ic">🏠</span>Menü</button>
@@ -558,17 +757,22 @@ function examSetup(){
     <h1>⏱️ Prüfung</h1>
     <div class="card center"><h2>❓ Wie viele Aufgaben?</h2>${stepper("count")}</div>
     <div class="card center"><h2>⏳ Sekunden pro Aufgabe</h2>${stepper("time")}</div>
+    <div class="card center">
+      <h2 style="margin-bottom:0">🧮 Rechenarten</h2>
+      ${opPills(S.ops)}
+      <p class="hint" style="margin-top:10px">${S.ops.length > 1 ? "Jede Rechenart kommt etwa gleich oft dran." : "Weitere Rechenarten kannst du in den Einstellungen anschalten."}</p>
+    </div>
     <p class="center hint">Tippe deine Antwort ein. Die Ergebnisse siehst du erst ganz am Ende. Viel Glück! 🍀</p>
     <button class="btn ok" onclick="startExam()"><span class="ic">🚀</span>Prüfung starten</button>
     ${H.length ? `<div class="card"><h2>📜 Deine letzten Prüfungen</h2><div class="list">${H.map(h => `
-      <div class="res"><div class="line"><span class="grow">${new Date(h.d).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>
+      <div class="res"><div class="line"><span class="grow">${new Date(h.d).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} ${(h.ops||["+"]).map(o=>OPS[o].sym).join(" ")}</span>
       <span class="meta">${h.ok} von ${h.n} · ${h.time} s</span><span>${starStr(h.ok/h.n)}</span></div></div>`).join("")}</div></div>` : ""}
   `);
 }
 function starsFor(q){ return q >= 0.9 ? 3 : q >= 0.6 ? 2 : 1; }
 function starStr(q){ return "⭐".repeat(starsFor(q)); }
 function startExam(){
-  S.examRun = { tasks: examTasks(S.exam.count), answers: [], index: 0, time: S.exam.time };
+  S.examRun = { tasks: examTasks(S.exam.count), answers: [], index: 0, time: S.exam.time, ops: S.ops.slice() };
   save(); examQuestion();
 }
 function examQuestion(){
@@ -581,7 +785,7 @@ function examQuestion(){
       <span class="pill secs" id="secs">⏳ ${X.time}</span>
     </header>
     <div class="bar" id="bar"><i style="width:100%"></i></div>
-    <div class="card"><div class="task">${t.a} + ${t.b} = <span class="answer-box" id="ans">&nbsp;</span></div></div>
+    <div class="card"><div class="task">${taskText(t)} = <span class="answer-box" id="ans">&nbsp;</span></div></div>
     <div class="keypad">
       ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="key" onclick="kp('${n}')">${n}</button>`).join("")}
       <button class="key" onclick="kp('del')" aria-label="Löschen">⌫</button>
@@ -619,10 +823,11 @@ function submitExam(){
 }
 function finishExam(){
   const X = S.examRun; S.examRun = null;
-  const res = X.tasks.map((t,i) => ({ a:t.a, b:t.b, v:X.answers[i].v, ok: X.answers[i].v === t.a+t.b }));
+  const res = X.tasks.map((t,i) => ({ op:opOf(t), a:t.a, b:t.b, v:X.answers[i].v, ok: X.answers[i].v === calc(t) }));
   const okN = res.filter(r=>r.ok).length, n = res.length, q = okN/n, st = starsFor(q);
-  S.history.push({ d: Date.now(), ok: okN, n, time: X.time }); S.history = S.history.slice(-20); save();
-  lastExamWrong = res.filter(r=>!r.ok).map(r => ({a:r.a, b:r.b}));
+  S.history.push({ d: Date.now(), ok: okN, n, time: X.time, ops: X.ops || ["+"] });
+  S.history = S.history.slice(-20); save();
+  lastExamWrong = res.filter(r=>!r.ok).map(r => ({op:r.op, a:r.a, b:r.b}));
   const head = q === 1 ? "Perfekt! 🏆" : q >= 0.8 ? "Super gemacht!" : q >= 0.5 ? "Gut gemacht!" : "Weiter so!";
   show(`
     ${header()}
@@ -632,9 +837,9 @@ function finishExam(){
       <p class="score">${okN} von ${n} richtig</p>
     </div>
     <div class="card quote center"><span class="q-ic">💬</span>${pick(QUOTES)}</div>
-    <div class="card"><h2>📋 Alle Ergebnisse</h2><div class="list">${res.map((r,i) => r.ok
-      ? `<div class="res"><div class="line"><span>✅</span><span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span></div></div>`
-      : `<details class="res wrong"><summary><span>❌</span><span class="grow">${r.a} + ${r.b} = ${r.a+r.b}</span><span class="meta">Du: ${r.v===null ? "–" : r.v}</span><span class="open">👀 Weg</span></summary>${explainHTML(r.a,r.b)}</details>`).join("")}</div></div>
+    <div class="card"><h2>📋 Alle Ergebnisse</h2><div class="list">${res.map(r => r.ok
+      ? `<div class="res"><div class="line"><span>✅</span><span class="grow">${taskText(r)} = ${calc(r)}</span></div></div>`
+      : `<details class="res wrong"><summary><span>❌</span><span class="grow">${taskText(r)} = ${calc(r)}</span><span class="meta">Du: ${r.v===null ? "–" : r.v}</span><span class="open">👀 Weg</span></summary>${explainHTML(r)}</details>`).join("")}</div></div>
     ${lastExamWrong.length ? `<button class="btn" onclick="startPractice('repeat', lastExamWrong)"><span class="ic">✏️</span>Falsche Aufgaben üben</button>` : ""}
     <div class="row">
       <button class="btn small" onclick="startExam()"><span class="ic">🔁</span>Nochmal</button>
